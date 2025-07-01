@@ -5,6 +5,7 @@ LABEL maintainer="gedemarcel0002@hotmail.com"
 # Install basic utilities
 RUN yum -y update && yum -y install httpd zip unzip && yum clean all
 
+# Download zip file into root directory
 ADD https://www.free-css.com/assets/files/free-css-templates/download/page254/photogenic.zip /var/www/html/
 
 # Set working directory
