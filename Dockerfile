@@ -6,19 +6,19 @@ LABEL maintainer="gedemarcel0002@hotmail.com"
 RUN yum -y update && yum -y install httpd zip unzip && yum clean all
 
 # Download zip file into root directory
-ADD https://www.free-css.com/assets/files/free-css-templates/download/page287/photographer.zip /var/www/html/
+ADD https://www.tooplate.com/zip-templates/2119_gymso_fitness.zip /var/www/html/
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Unzip the downloaded file
-RUN unzip photographer.zip
+RUN unzip 2119_gymso_fitness.zip
 
 # Copy the contents of 'photogenic' dir to the current directory
-RUN cp -rvf photographer/* .
+RUN cp -rvf 2119_gymso_fitness/* .
 
 # Remove the 'photogenic' directory and the zip file to clean up
-RUN rm -rf photographer photographer.zip
+RUN rm -rf 2119_gymso_fitness 2119_gymso_fitness.zip
 
 # Default command at runtime
 CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
