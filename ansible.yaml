@@ -2,6 +2,6 @@
   become: true
   tasks:
     - name: Create new webapp deployment
-      command: kubectl apply -f /home/ubuntu/deployment.yaml 
+      command: kubectl apply -f /home/jenkins/deployment.yaml 
     - name: Create new webapp service
-      command: kubectl apply -f /home/ubuntu/service.yaml
+      command: kubectl apply -f /home/jenkins/service.yaml
