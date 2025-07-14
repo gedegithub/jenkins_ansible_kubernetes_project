@@ -3,9 +3,5 @@
   tasks:
     - name: Create new webapp deployment
       command: kubectl apply -f /home/jenkins/deployment.yaml 
-      environment:
-        KUBECONFIG: /home/ubuntu/.kube/config
     - name: Create new webapp service
       command: kubectl apply -f /home/jenkins/service.yaml
-      environment:
-        KUBECONFIG: /home/ubuntu/.kube/config
