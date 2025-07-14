@@ -1,7 +1,7 @@
-- hosts: node 
+- hosts: node
   become: true
   tasks:
     - name: Create new webapp deployment
-      command: kubectl apply -f /home/azureuser/deployment.yaml 
+      command: kubectl apply -f /home/azureuser/deployment.yaml
     - name: Create new webapp service
       command: kubectl apply -f /home/azureuser/service.yaml
