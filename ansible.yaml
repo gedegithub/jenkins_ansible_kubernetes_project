@@ -1,6 +1,8 @@
 - hosts: node 
   become: true
   tasks:
+    - name: Create webapp-namespace if doesn't exist
+      command: kubectl create namespace webapp-namespace --dry-run=client -o yaml | kubectl apply -f -
     - name: Create new webapp deployment
       command: kubectl apply -f /home/jenkins/deployment.yaml 
     - name: Create new webapp service
