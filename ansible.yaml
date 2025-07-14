@@ -2,6 +2,6 @@
   become: true
   tasks:
     - name: Create new webapp deployment
-      command: KUBECONFIG=/home/ubuntu/.kube/config kubectl apply -f /home/ubuntu/deployment.yaml
+      shell: KUBECONFIG=/home/ubuntu/.kube/config kubectl apply -f /home/ubuntu/deployment.yaml
     - name: Create new webapp service
-      command: KUBECONFIG=/home/ubuntu/.kube/config kubectl apply -f /home/ubuntu/service.yaml
+      shell: KUBECONFIG=/home/ubuntu/.kube/config kubectl apply -f /home/ubuntu/service.yaml
