@@ -1,9 +1,0 @@
-- hosts: node
-  become: true
-  tasks:
-    - name: Delete webapp service
-      shell: KUBECONFIG=/home/ubuntu/.kube/config kubectl delete -f /home/ubuntu/service.yaml || true
-    - name: Delete webapp deployment
-      shell: KUBECONFIG=/home/ubuntu/.kube/config kubectl delete -f /home/ubuntu/deployment.yaml || true
-    - name: Delete webapp namespace
-      shell: KUBECONFIG=/home/ubuntu/.kube/config kubectl delete namespace webapp-namespace || true
