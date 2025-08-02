@@ -1,0 +1,110 @@
+** github account & repo 
+    -> Webhook 
+        su - 
+        run ngrok http 8080 in local Jenkins server & 
+        update payload url in github repo -webhook 
+
+** Jenkins Server cofigured & running 
+    -> Jenkins UI pipeline 
+        -> update in jenkins `pipelineScript` ec2 connection for ansible server 
+        -> update key pair (private key) in jenkins credentials for ansible 
+            echo && cat datakeypair.pem && echo && echo
+            et paste the content in jenkins credentials
+    -> Update -kubernetes_login     [in Jenkins UI Manage/Credentials]
+        -> kubernetes private key located locally on Azure CLI
+        echo && cat /home/azureuser/.ssh/id_rsa && echo
+----------
+ ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com
+
+** Ansible Server configured & running on EC2
+
+** Docker Hub account 
+    -> username & password to create repo from pipeline using Secret if not already done  
+
+** Kubernetes Server is running on Azure 
+
+** Passwordless communication between Ansible & Kubernetes  
+-> Kubernetes Azure & make sure
+    sudo -i
+    nano /etc/ssh/sshd_config 
+    PasswordAuthentication no 
+    service sshd restart  
+-> on ansible ec2
+    ssh-keygen -t rsa -C "ec2-to-azure"
+    echo && cat ~/.ssh/id_rsa.pub && echo 
+    paste in k8s Master /home/ubuntu & azureuser/.ssh/authorized_keys 
+-> kubernetes 
+   cp public key to ubuntu & azure in kubernetes cluster after erasing previous ones
+   su - ubuntu && cd /home/ubuntu/.ssh/authorized_keys
+     sudo nano /home/azureuser/.ssh/authorized_keys
+   su - azureuser && cd /home/azureuser/.ssh/authorized_keys
+     sudo nano /home/azureuser/.ssh/authorized_keys
+-------------
+ ssh -o StrictHostKeyChecking=no ubuntu@172.184.184.173
+
+** Add Host File in Ansible Server 
+   login as root with 
+    sudo -i
+    nano /etc/ansible/hosts                             [to add the group name 'node' at the end]
+        [node]
+        172.184.184.173 ansible_user=ubuntu             [kunertes_ip=172.184.184.173]                        
+        ctrl + O 
+        Enter 
+        ctrl + X
+        exit                                     
+---------------
+    ansible -m ping node
+     yes
+    
+** Create ubuntu user on kubernetes master              [to be able to ping node group]
+    cut -d: -f1 /etc/passwd                             [list all the users]
+    sudo adduser ubuntu                                 [set a temporary password 1234]
+    sudo passwd -d ubuntu                               [to delete the password]
+    sudo usermod -aG sudo ubuntu                        [add ubuntu to sudo & docker groups]
+    cut -d: -f1 /etc/passwd | grep ubuntu 
+    paste ansible ec2 public key content in kubernetes  [/home/ubuntu/.ssh/authorized_keys] 
+-----------
+Grant write permissions for ubuntu user to              [/home/ubuntu]
+    sudo chown -R ubuntu:ubuntu /home/ubuntu
+    sudo chmod 700 /home/ubuntu
+
+** To be able to copy deployment & service yaml 
+    From ubuntu to kubernetes cluster 
+        -> For ubuntu user in kuberenetes cluster 
+            -> copy public key located in local azure CLI to (kubernetes) ubuntu user in authorized_keys 
+                -> sudo su - ubuntu
+
+** If kubectl get po works from azureuser but not from ubuntu user in kubernetes cluster 
+    su - ubuntu 
+    sudo cp .kube/config /home/ubuntu/.kube
+
+** Check the pods after cluster deployment 
+    kubectl get po -n webapp-namespace
+    kubectl get service
+---------
+NAME             TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+kubernetes       ClusterIP      10.96.0.1      <none>        443/TCP          12h
+webapp-service   LoadBalancer   10.96.89.152   <pending>     8080:31200/TCP   20m
+
+** Open Port 31200, 31201 & 31202 on Azure CLI if not already done --exec the cmd 3 times 
+az network nsg rule create \
+    --resource-group k8s-cluster \
+    --nsg-name k8sMasterNSG \
+    --name AllowWebApp31200 \
+    --priority 3891 \
+    --direction Inbound \
+    --access Allow \
+    --protocol Tcp \
+    --destination-port-range 31200 \
+    --destination-address-prefix "*" \
+    --source-address-prefix "*" \
+    --source-port-range "*"
+
+** Delete Kubernetes resources if deploying a 2nd time 
+    kubectl delete -f /home/ubuntu/service.yaml
+    kubectl delete -f /home/ubuntu/deployment.yaml
+    kubectl delete namespace webapp-namespace
+    docker rmi <>
+
+** Log to the App from the browser
+  http://172.184.184.173:31200/

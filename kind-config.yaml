@@ -7,3 +7,9 @@ nodes:
       - containerPort: 31200
         hostPort: 31200
         protocol: TCP
+      - containerPort: 31201
+        hostPort: 31201
+        protocol: TCP
+      - containerPort: 31202
+        hostPort: 31202
+        protocol: TCP

@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     app: webapp
-  type: NodePort
+  type: NodePort  # LoadBalancer, not good with kind
   ports:
     - port: 8080
       targetPort: 80

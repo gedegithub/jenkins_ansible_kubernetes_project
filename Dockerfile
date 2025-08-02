@@ -3,25 +3,20 @@ FROM almalinux:latest
 LABEL maintainer="gedemarcel0002@hotmail.com"
 
 # Install basic utilities: apache, zip, and unzip
-RUN yum -y update && yum -y install httpd zip unzip && yum clean all
+RUN yum -y update && yum -y install httpd && yum clean all
 
-# Download zip file into root directory
-ADD https://www.tooplate.com/zip-templates/2119_gymso_fitness.zip /var/www/html/
+# Copy the contents of 'iPortfolio' directly to the web root
+COPY iPortfolio/ /var/www/html/
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Unzip the downloaded file
-RUN unzip 2119_gymso_fitness.zip
-
-# Copy the contents of 'photogenic' dir to the current directory
-RUN cp -rvf 2119_gymso_fitness/* .
-
-# Remove the 'photogenic' directory and the zip file to clean up
-RUN rm -rf 2119_gymso_fitness 2119_gymso_fitness.zip
+# Ensure proper permissions for Apache
+RUN chown -R apache:apache /var/www/html && \
+    chmod -R 755 /var/www/html
 
 # Default command at runtime
 CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
 
 # Expose HTTP port
-EXPOSE 80 443
+EXPOSE 80

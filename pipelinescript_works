@@ -1,0 +1,84 @@
+node {
+    stage('Git Checkout'){
+        git([
+            branch: 'main',
+            credentialsId: '927d0196-5a8d-4ca9-8a02-d04a6f50580c',
+            url: 'https://github.com/gedegithub/jenkins_ansible_kubernetes_project.git'
+        ])
+    }
+    stage('Sending Dockerfile to Ansible Server using sshagent'){
+        sshagent(['ansible_server']){
+            sh '''
+                echo "Copying Dockerfile to Ansible server..."
+                scp -o StrictHostKeyChecking=no ${WORKSPACE}/Dockerfile ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com:/home/ubuntu/
+
+                echo "Verifying Dockerfile was copied successfully..."
+                ssh -o StrictHostKeyChecking=no  ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com "ls -la /home/ubuntu/Dockerfile"
+            '''
+        }
+    }
+    stage('Build the Docker Image'){
+        sshagent(['ansible_server']){
+            sh '''
+                echo "Granting ubuntu user passwordless sudo for docker..."
+                ssh -o StrictHostKeyChecking=no  ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com "echo 'ubuntu ALL=(ALL) NOPASSWD: /usr/bin/docker' | sudo tee /etc/sudoers.d/ubuntu-docker"
+                
+                echo "Building Dockerfile Image ..."
+                ssh -o StrictHostKeyChecking=no  ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com sudo docker image build -t $JOB_NAME:v1.$BUILD_ID -f /home/ubuntu/Dockerfile /home/ubuntu
+            '''
+        }
+    }
+    stage('Docker Image Tagging'){
+        sshagent(['ansible_server']){
+            sh '''
+                echo "Tag docker image before updloading it to docker hub."
+                ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com cd /home/ubuntu
+                ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com sudo docker image tag $JOB_NAME:v1.$BUILD_ID gededhub/$JOB_NAME:v1.$BUILD_ID
+                ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com sudo docker image tag $JOB_NAME:v1.$BUILD_ID gededhub/$JOB_NAME:latest
+            '''
+        }
+    }
+    stage('Pushing Docker Image from Ansible Server to Docker Hub'){
+        sshagent(['ansible_server']){
+            withCredentials([string(credentialsId: 'dockerhub_access', variable: 'dockerhub_access')]) {
+                sh '''
+                    echo "Push docker image to Docker Hub after logging in"
+                    ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com sudo docker login -u gededhub -p $dockerhub_access
+                    ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com sudo docker image push gededhub/$JOB_NAME:v1.$BUILD_ID
+                    ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com sudo docker image push gededhub/$JOB_NAME:latest
+                '''
+            }
+        }
+    }
+    stage('Sending deployment.yaml & service.yaml to Kubernetes Server'){
+       sshagent(['kubernetes_login']) {
+           sh '''
+                echo "Copying deployment.yaml & service.yaml to kubernetes cluster ..."
+                ssh -o StrictHostKeyChecking=no  ubuntu@172.184.184.173
+                scp /var/lib/jenkins/workspace/kubernetes-pipeline/deployment.yaml ubuntu@172.184.184.173:/home/ubuntu
+                scp /var/lib/jenkins/workspace/kubernetes-pipeline/service.yaml ubuntu@172.184.184.173:/home/ubuntu
+            '''
+       } 
+    }
+    stage('Sending ansible.yaml playbook to Ansible Server'){
+        sshagent(['ansible_server']){
+            sh '''
+                echo "Copying ansible.yaml playbook to Ansible server..."
+                ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com cd /home/ubuntu
+                scp /var/lib/jenkins/workspace/kubernetes-pipeline/ansible.yaml ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com:/home/ubuntu
+
+                echo "Verifying ansible.yaml was copied successfully..."
+                ssh -o StrictHostKeyChecking=no  ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com "ls -la /home/ubuntu/ansible.yaml"
+            '''
+        }
+    }
+    stage('Kubernetes deployment using Ansible'){
+        sshagent(['ansible_server']){
+            sh '''
+                echo "Deploying Application on Kubernetes Cluster using Ansible Playbook ..."
+                ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com cd /home/ubuntu
+                ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-161-70-65.compute-1.amazonaws.com ansible-playbook ansible.yaml
+            '''
+        }
+    }
+}
