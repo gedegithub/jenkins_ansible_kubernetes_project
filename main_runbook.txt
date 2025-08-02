@@ -106,5 +106,5 @@ az network nsg rule create \
     kubectl delete namespace webapp-namespace
     docker rmi <>
 
-** Log to the App from the browser
+** Log to the App from the browser like this
   http://172.184.184.173:31200/
