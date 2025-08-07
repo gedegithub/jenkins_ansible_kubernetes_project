@@ -12,3 +12,5 @@
 	-> commit any change to github to trigger the pipeline
 
 ** Also powerpoint presentation included in project
+
+** Demo helm included in project
